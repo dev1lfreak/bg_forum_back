@@ -3,6 +3,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateRoleDto } from './dto/update-role.dto';
 import { getCurrentUserFromHeaders } from '../../common/http/current-user';
 
 @Controller('users')
@@ -32,6 +33,16 @@ export class UsersController {
   ) {
     const currentUser = getCurrentUserFromHeaders(headers);
     return this.usersService.update(Number(id), dto, currentUser);
+  }
+
+  @Patch(':id/role')
+  updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+    @Headers() headers: Record<string, unknown>,
+  ) {
+    const currentUser = getCurrentUserFromHeaders(headers);
+    return this.usersService.updateRole(Number(id), dto.role, currentUser);
   }
 
   @Delete(':id')

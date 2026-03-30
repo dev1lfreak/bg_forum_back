@@ -61,10 +61,27 @@ export class UsersService {
     if (dto.password) {
       data.password = await bcrypt.hash(dto.password, this.saltRounds);
     }
+    if (dto.role && currentUser.role !== Role.admin) {
+      throw new ForbiddenException('Only admin can change user role');
+    }
 
     return this.prisma.user.update({
       where: { id },
       data,
+    });
+  }
+
+  async updateRole(id: number, role: Role, currentUser: { id: number; role: Role }) {
+    if (currentUser.role !== Role.admin) {
+      throw new ForbiddenException('Only admin can change user role');
+    }
+
+    const userToUpdate = await this.prisma.user.findUnique({ where: { id } });
+    if (!userToUpdate) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: { role },
     });
   }
 
