@@ -78,7 +78,7 @@ export class PostsService {
       this.prisma.post.count({ where }),
     ]);
 
-    return { items, total, limit, offset };
+    return { items, total };
   }
 
   // Обновление поста

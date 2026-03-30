@@ -33,9 +33,9 @@ export class PostsController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
+remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
     const currentUser = getCurrentUserFromHeaders(headers);
-    return this.postsService.remove(Number(id), currentUser);
+    this.postsService.remove(Number(id), currentUser);
   }
 }
 

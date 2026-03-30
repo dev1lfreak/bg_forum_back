@@ -23,7 +23,7 @@ export class BookmarksController {
   @Delete()
   removeAll(@Headers() headers: Record<string, unknown>) {
     const currentUser = getCurrentUserFromHeaders(headers);
-    return this.bookmarksService.removeAll(currentUser.id);
+    this.bookmarksService.removeAll(currentUser.id);
   }
 }
 

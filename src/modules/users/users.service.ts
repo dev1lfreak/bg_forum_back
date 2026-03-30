@@ -36,19 +36,26 @@ export class UsersService {
         ...dto,
         password: hashedPassword,
       },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
     });
   }
 
   // Поиск пользователя по id
   async findById(id: number) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
+    });
     if (!user) throw new NotFoundException('User not found');
     return user;
-  }
-
-  // Поиск пользователя по email
-  async findByEmail(email: string) {
-    return this.prisma.user.findUnique({ where: { email } });
   }
 
   // Обновление данных пользователя
@@ -68,6 +75,11 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data,
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
     });
   }
 
@@ -82,6 +94,11 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id },
       data: { role },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
     });
   }
 
@@ -108,9 +125,11 @@ export class UsersService {
       select: {
         id: true,
         username: true,
-        role: true,
         _count: {
-          select: { posts: true, comments: true }
+          select: { 
+            posts: true, 
+            comments: true 
+          }
         }
       }
     });
@@ -129,7 +148,7 @@ export class UsersService {
     }
 
     const hashedPassword = await bcrypt.hash(dto.newPassword, this.saltRounds);
-    return this.prisma.user.update({
+    await this.prisma.user.update({
       where: { id: userId },
       data: { password: hashedPassword },
     });

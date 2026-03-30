@@ -17,10 +17,8 @@ export class BookmarksService {
 
     if (bookmark) {
       await this.prisma.bookmark.delete({ where: { id: bookmark.id } });
-      return { bookmarked: false };
     } else {
       await this.prisma.bookmark.create({ data: { userId, postId } });
-      return { bookmarked: true };
     }
   }
 
@@ -46,12 +44,12 @@ export class BookmarksService {
       this.prisma.bookmark.count({ where: { userId } })
     ]);
 
-    return { items, total, limit, offset };
+    return { items, total};
   }
 
   // Очистка всех закладок пользователя
   async removeAll(userId: number) {
-    return this.prisma.bookmark.deleteMany({
+    await this.prisma.bookmark.deleteMany({
       where: { userId }
     });
   }

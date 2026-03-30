@@ -46,9 +46,9 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
+  async remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
     const currentUser = getCurrentUserFromHeaders(headers);
-    return this.usersService.remove(Number(id), currentUser);
+    await this.usersService.remove(Number(id), currentUser);
   }
 
   @Post(':id/change-password')

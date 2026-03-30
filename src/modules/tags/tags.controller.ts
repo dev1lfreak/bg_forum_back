@@ -33,7 +33,7 @@ export class TagsController {
   @Delete(':id')
   remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
     const currentUser = getCurrentUserFromHeaders(headers);
-    return this.tagsService.remove(Number(id), currentUser.role);
+    this.tagsService.remove(Number(id), currentUser.role);
   }
 }
 

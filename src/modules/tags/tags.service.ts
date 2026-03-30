@@ -50,7 +50,7 @@ export class TagsService {
 
     await this.findOne(id);
 
-    return this.prisma.tag.delete({ where: { id } });
+    await this.prisma.tag.delete({ where: { id } });
   }
 
   // Получение всех тегов
