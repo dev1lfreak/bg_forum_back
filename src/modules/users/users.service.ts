@@ -1,0 +1,131 @@
+import { 
+  Injectable, 
+  ConflictException, 
+  NotFoundException, 
+  ForbiddenException,
+  UnauthorizedException 
+} from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { Role, User } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+
+
+@Injectable()
+export class UsersService {
+  private readonly saltRounds = 10;
+
+  constructor(private prisma: PrismaService) {}
+
+  // Создание пользователя
+  async create(dto: CreateUserDto) {
+    const existingUser = await this.prisma.user.findFirst({
+      where: { OR: [{ email: dto.email }, { username: dto.username }] },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email or username already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.password, this.saltRounds);
+
+    return this.prisma.user.create({
+      data: {
+        ...dto,
+        password: hashedPassword,
+      },
+    });
+  }
+
+  // Поиск пользователя по id
+  async findById(id: number) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  // Поиск пользователя по email
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
+
+  // Обновление данных пользователя
+  async update(id: number, dto: UpdateUserDto, currentUser: { id: number; role: Role }) {
+    const userToUpdate = await this.prisma.user.findUnique({ where: { id } });
+    if (!userToUpdate) throw new NotFoundException();
+    this.validateAccess(userToUpdate.id, currentUser);
+
+    const data = { ...dto };
+    if (dto.password) {
+      data.password = await bcrypt.hash(dto.password, this.saltRounds);
+    }
+
+    return this.prisma.user.update({
+      where: { id },
+      data,
+    });
+  }
+
+  // Удаление пользователя
+  async remove(id: number, currentUser: { id: number; role: Role }) {
+    const userToDelete = await this.prisma.user.findUnique({ where: { id } });
+    if (!userToDelete) throw new NotFoundException();
+
+    this.validateAccess(userToDelete.id, currentUser);
+
+    return this.prisma.$transaction([
+      this.prisma.bookmark.deleteMany({ where: { userId: id } }),
+      this.prisma.rating.deleteMany({ where: { userId: id } }),
+      this.prisma.comment.deleteMany({ where: { authorId: id } }),
+      this.prisma.post.deleteMany({ where: { authorId: id } }),
+      this.prisma.user.delete({ where: { id } }),
+    ]);
+  }
+
+  // Получение публичного профиля
+  async getPublicProfile(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+        _count: {
+          select: { posts: true, comments: true }
+        }
+      }
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  // Смена пароля
+  async changePassword(userId: number, dto: ChangePasswordDto) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException();
+
+    const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
+    if (!isMatch) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, this.saltRounds);
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+  }
+
+  // Валидация доступа к ресурсам
+  validateAccess(resourceOwnerId: number, currentUser: { id: number; role: Role }) {
+    const isOwner = resourceOwnerId === currentUser.id;
+    const isAdmin = currentUser.role === Role.admin;
+
+    if (!isOwner && !isAdmin) {
+      throw new ForbiddenException('You do not have permission to perform this action');
+    }
+    return true;
+  }
+}
