@@ -1,17 +1,19 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CurrentUser } from '../../auth/current-user.decorator';
+import type { CurrentUser as CurrentUserPayload } from '../../common/http/current-user';
 import { CommentsService } from './comments.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { UpdateCommentDto } from './dto/update-comment.dto';
-import { getCurrentUserFromHeaders } from '../../common/http/current-user';
 
 @Controller('comments')
 export class CommentsController {
   constructor(private readonly commentsService: CommentsService) {}
 
   @Post()
-  create(@Headers() headers: Record<string, unknown>, @Body() dto: CreateCommentDto) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.commentsService.create(currentUser.id, dto);
+  @UseGuards(JwtAuthGuard)
+  create(@CurrentUser() user: CurrentUserPayload, @Body() dto: CreateCommentDto) {
+    return this.commentsService.create(user.id, dto);
   }
 
   @Get('post/:postId')
@@ -20,19 +22,18 @@ export class CommentsController {
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateCommentDto,
-    @Headers() headers: Record<string, unknown>,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.commentsService.update(Number(id), dto, currentUser);
+    return this.commentsService.update(Number(id), dto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.commentsService.remove(Number(id), currentUser);
+  @UseGuards(JwtAuthGuard)
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.commentsService.remove(Number(id), user);
   }
 }
-

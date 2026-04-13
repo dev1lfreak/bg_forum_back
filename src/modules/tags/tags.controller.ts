@@ -1,17 +1,19 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CurrentUser } from '../../auth/current-user.decorator';
+import type { CurrentUser as CurrentUserPayload } from '../../common/http/current-user';
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
-import { getCurrentUserFromHeaders } from '../../common/http/current-user';
 
 @Controller('tags')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 
   @Post()
-  create(@Body() dto: CreateTagDto, @Headers() headers: Record<string, unknown>) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.tagsService.create(dto, currentUser.role);
+  @UseGuards(JwtAuthGuard)
+  create(@Body() dto: CreateTagDto, @CurrentUser() user: CurrentUserPayload) {
+    return this.tagsService.create(dto, user.role);
   }
 
   @Get()
@@ -25,15 +27,18 @@ export class TagsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateTagDto, @Headers() headers: Record<string, unknown>) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.tagsService.update(Number(id), dto, currentUser.role);
+  @UseGuards(JwtAuthGuard)
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateTagDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    return this.tagsService.update(Number(id), dto, user.role);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    this.tagsService.remove(Number(id), currentUser.role);
+  @UseGuards(JwtAuthGuard)
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.tagsService.remove(Number(id), user.role);
   }
 }
-

@@ -81,6 +81,18 @@ export class PostsService {
     return { items, total };
   }
 
+  async findById(id: number) {
+    const post = await this.prisma.post.findUnique({
+      where: { id },
+      include: {
+        author: { select: { username: true } },
+        tags: { include: { tag: true } },
+      },
+    });
+    if (!post) throw new NotFoundException('Post not found');
+    return post;
+  }
+
   // Обновление поста
   async update(id: number, dto: UpdatePostDto, currentUser: { id: number; role: Role }) {
     const post = await this.prisma.post.findUnique({ where: { id: id } });

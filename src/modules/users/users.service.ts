@@ -6,7 +6,7 @@ import {
   UnauthorizedException 
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role, User } from '@prisma/client';
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -18,6 +18,11 @@ export class UsersService {
   private readonly saltRounds = 10;
 
   constructor(private prisma: PrismaService) {}
+
+  /** Для логина / выдачи JWT (включает password). Не использовать в публичных ответах. */
+  findForAuthByEmail(email: string) {
+    return this.prisma.user.findUnique({ where: { email } });
+  }
 
   // Создание пользователя
   async create(dto: CreateUserDto) {
@@ -138,9 +143,15 @@ export class UsersService {
   }
 
   // Смена пароля
-  async changePassword(userId: number, dto: ChangePasswordDto) {
+  async changePassword(
+    userId: number,
+    dto: ChangePasswordDto,
+    currentUser: { id: number; role: Role },
+  ) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException();
+
+    this.validateAccess(userId, currentUser);
 
     const isMatch = await bcrypt.compare(dto.oldPassword, user.password);
     if (!isMatch) {

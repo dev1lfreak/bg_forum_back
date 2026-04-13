@@ -1,10 +1,22 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
+import { CurrentUser } from '../../auth/current-user.decorator';
+import type { CurrentUser as CurrentUserPayload } from '../../common/http/current-user';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { getCurrentUserFromHeaders } from '../../common/http/current-user';
 
 @Controller('users')
 export class UsersController {
@@ -15,45 +27,51 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 
-  @Get(':id')
-  findById(@Param('id') id: string) {
-    return this.usersService.findById(Number(id));
-  }
-
   @Get('profile/:username')
   getPublicProfile(@Param('username') username: string) {
     return this.usersService.getPublicProfile(username);
   }
 
+  @Get(':id')
+  findById(@Param('id') id: string) {
+    return this.usersService.findById(Number(id));
+  }
+
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() dto: UpdateUserDto,
-    @Headers() headers: Record<string, unknown>,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.usersService.update(Number(id), dto, currentUser);
+    return this.usersService.update(Number(id), dto, user);
   }
 
   @Patch(':id/role')
+  @UseGuards(JwtAuthGuard)
   updateRole(
     @Param('id') id: string,
     @Body() dto: UpdateRoleDto,
-    @Headers() headers: Record<string, unknown>,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    return this.usersService.updateRole(Number(id), dto.role, currentUser);
+    return this.usersService.updateRole(Number(id), dto.role, user);
   }
 
   @Delete(':id')
-  async remove(@Param('id') id: string, @Headers() headers: Record<string, unknown>) {
-    const currentUser = getCurrentUserFromHeaders(headers);
-    await this.usersService.remove(Number(id), currentUser);
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  async remove(@Param('id') id: string, @CurrentUser() user: CurrentUserPayload) {
+    await this.usersService.remove(Number(id), user);
   }
 
   @Post(':id/change-password')
-  changePassword(@Param('id') id: string, @Body() dto: ChangePasswordDto) {
-    return this.usersService.changePassword(Number(id), dto);
+  @HttpCode(204)
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Param('id') id: string,
+    @Body() dto: ChangePasswordDto,
+    @CurrentUser() user: CurrentUserPayload,
+  ) {
+    await this.usersService.changePassword(Number(id), dto, user);
   }
 }
-

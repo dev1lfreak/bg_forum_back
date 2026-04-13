@@ -47,7 +47,7 @@ export class CommentsService {
 
     this.usersService.validateAccess(comment.authorId, currentUser);
 
-    return this.prisma.comment.delete({ where: { id } });
+    await this.prisma.comment.delete({ where: { id } });
   }
 
   // Получение комментариев по ID поста
@@ -57,5 +57,14 @@ export class CommentsService {
       orderBy: { createdAt: 'asc' },
       include: { author: { select: { username: true } } },
     });
+  }
+
+  async findById(id: number) {
+    const comment = await this.prisma.comment.findUnique({
+      where: { id },
+      include: { author: { select: { username: true } } },
+    });
+    if (!comment) throw new NotFoundException('Comment not found');
+    return comment;
   }
 }
