@@ -49,6 +49,22 @@ export class UsersService {
     });
   }
 
+  async findAll(currentUser: { id: number; role: Role }) {
+    if (currentUser.role !== Role.admin) {
+      throw new ForbiddenException('Only admin can view users list');
+    }
+
+    return this.prisma.user.findMany({
+      orderBy: { id: 'asc' },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role: true
+      }
+    });
+  }
+
   // Поиск пользователя по id
   async findById(id: number) {
     const user = await this.prisma.user.findUnique({

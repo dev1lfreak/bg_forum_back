@@ -27,6 +27,12 @@ export class UsersController {
     return this.usersService.create(dto);
   }
 
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  findAll(@CurrentUser() user: CurrentUserPayload) {
+    return this.usersService.findAll(user);
+  }
+
   @Get('profile/:username')
   getPublicProfile(@Param('username') username: string) {
     return this.usersService.getPublicProfile(username);
