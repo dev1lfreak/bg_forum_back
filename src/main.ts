@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
+import { ElapsedTimeInterceptor } from './common/interceptors/elapsed-time.interceptor';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -30,6 +31,7 @@ async function bootstrap() {
       forbidUnknownValues: false,
     }),
   );
+  app.useGlobalInterceptors(new ElapsedTimeInterceptor());
   await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

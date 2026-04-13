@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, Param, Patch, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { Role } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../auth/optional-jwt-auth.guard';
@@ -8,6 +8,7 @@ import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { FindAllPostsDto } from './dto/find-all-posts.dto';
+import { EtagInterceptor } from '../../common/interceptors/etag.interceptor';
 
 @Controller('posts')
 export class PostsController {
@@ -21,6 +22,8 @@ export class PostsController {
 
   @Get()
   @UseGuards(OptionalJwtAuthGuard)
+  @UseInterceptors(EtagInterceptor)
+  @Header('Cache-Control', 'public, max-age=3600, must-revalidate')
   findAll(
     @Query() query: FindAllPostsDto,
     @CurrentUser() user: CurrentUserPayload | undefined,

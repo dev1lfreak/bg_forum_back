@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Inject, Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import type { Cache } from 'cache-manager';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -11,6 +13,7 @@ export class PostsService {
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   // Валидация существования тегов перед созданием или обновлением поста
@@ -44,6 +47,12 @@ export class PostsService {
   // Функция для получения всех постов с поддержкой фильтрации, пагинации и сортировки
   async findAll(query: FindAllPostsDto, isAdminOrAuthor: boolean = false) {
     const { search, tag, limit, offset, sortBy, order } = query;
+    const cacheKey = `posts:${isAdminOrAuthor}:${search ?? ''}:${tag ?? ''}:${limit ?? 10}:${offset ?? 0}:${sortBy ?? 'createdAt'}:${order ?? 'desc'}`;
+
+    const cached = await this.cacheManager.get<{ items: any[]; total: number }>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const where: Prisma.PostWhereInput = {
       status: isAdminOrAuthor ? undefined : Status.Published,
@@ -78,7 +87,9 @@ export class PostsService {
       this.prisma.post.count({ where }),
     ]);
 
-    return { items, total };
+    const payload = { items, total };
+    await this.cacheManager.set(cacheKey, payload, 5);
+    return payload;
   }
 
   async findById(id: number) {
