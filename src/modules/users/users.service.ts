@@ -19,7 +19,6 @@ export class UsersService {
 
   constructor(private prisma: PrismaService) {}
 
-  /** Для логина / выдачи JWT (включает password). Не использовать в публичных ответах. */
   findForAuthByEmail(email: string) {
     return this.prisma.user.findUnique({ where: { email } });
   }

@@ -1,9 +1,7 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
-/**
- * Allows unauthenticated requests; if `Authorization: Bearer` is present, validates JWT.
- */
+
 @Injectable()
 export class OptionalJwtAuthGuard extends AuthGuard('jwt') {
   canActivate(context: ExecutionContext) {

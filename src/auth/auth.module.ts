@@ -14,7 +14,6 @@ import { AuthResolver } from './auth.resolver';
     JwtModule.registerAsync({
       useFactory: () => ({
         secret: process.env.JWT_SECRET ?? 'dev-secret-change-me',
-        // seconds (jsonwebtoken typings reject arbitrary string from env)
         signOptions: { expiresIn: Number(process.env.JWT_EXPIRES_SEC ?? 60 * 60 * 24 * 7) },
       }),
     }),
