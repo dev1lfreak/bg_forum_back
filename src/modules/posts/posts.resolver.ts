@@ -92,6 +92,29 @@ export class PostsResolver {
     };
   }
 
+  @Mutation(() => PostGql)
+  async incrementPostView(@Args('id', { type: () => Int }) id: number): Promise<PostGql> {
+    const updated: any = await this.postsService.incrementView(id);
+    return {
+      ...updated,
+      authorUsername: updated.author?.username,
+      tags: updated.tags?.map((t: any) => t.tag),
+    };
+  }
+
+  @Mutation(() => PostGql)
+  async votePost(
+    @Args('id', { type: () => Int }) id: number,
+    @Args('delta', { type: () => Int }) delta: number,
+  ): Promise<PostGql> {
+    const updated: any = await this.postsService.vote(id, delta);
+    return {
+      ...updated,
+      authorUsername: updated.author?.username,
+      tags: updated.tags?.map((t: any) => t.tag),
+    };
+  }
+
   @Mutation(() => Boolean)
   @UseGuards(GqlJwtAuthGuard)
   async deletePost(

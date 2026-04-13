@@ -93,6 +93,37 @@ export class PostsService {
     return post;
   }
 
+  async incrementView(id: number) {
+    const post = await this.prisma.post.findUnique({ where: { id } });
+    if (!post) throw new NotFoundException('Post not found');
+
+    return this.prisma.post.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      include: {
+        author: { select: { username: true } },
+        tags: { include: { tag: true } }
+      }
+    });
+  }
+
+  async vote(id: number, delta: number) {
+    if (![1, -1].includes(delta)) {
+      throw new BadRequestException('Vote delta must be 1 or -1');
+    }
+    const post = await this.prisma.post.findUnique({ where: { id } });
+    if (!post) throw new NotFoundException('Post not found');
+
+    return this.prisma.post.update({
+      where: { id },
+      data: { rating: { increment: delta } },
+      include: {
+        author: { select: { username: true } },
+        tags: { include: { tag: true } }
+      }
+    });
+  }
+
   // Обновление поста
   async update(id: number, dto: UpdatePostDto, currentUser: { id: number; role: Role }) {
     const post = await this.prisma.post.findUnique({ where: { id: id } });
